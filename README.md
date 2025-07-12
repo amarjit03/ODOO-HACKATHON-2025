@@ -1,5 +1,7 @@
 # StackIt - Q&A Forum Platform Backend
 
+## App Deployed : https://stackit-frontend-main.onrender.com/
+
 A minimal question-and-answer platform backend built with FastAPI and MongoDB.
 
 ## Features
