@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}About - StackIt{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-center">
+                <h2><i class="fas fa-stack-overflow"></i> StackIt</h2>
+                <p class="lead mb-0">A Minimal Q&A Forum Platform</p>
+            </div>
+            <div class="card-body">
+                <h4>Overview</h4>
+                <p>
+                    StackIt is a minimal question-and-answer platform that supports collaborative learning 
+                    and structured knowledge sharing. It's designed to be simple, user-friendly, and focused 
+                    on the core experience of asking and answering questions within a community.
+                </p>
+                
+                <h4>Core Features</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-question-circle text-primary"></i> Ask Questions</h6>
+                        <ul>
+                            <li>Rich text editor with formatting options</li>
+                            <li>Tag-based categorization</li>
+                            <li>Image and link support</li>
+                            <li>Code block formatting</li>
+                        </ul>
+                        
+                        <h6><i class="fas fa-comment text-success"></i> Answer Questions</h6>
+                        <ul>
+                            <li>Comprehensive rich text answers</li>
+                            <li>Answer acceptance system</li>
+                            <li>Community voting</li>
+                            <li>Comment threads</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-thumbs-up text-info"></i> Voting System</h6>
+                        <ul>
+                            <li>Upvote and downvote answers</li>
+                            <li>Reputation scoring</li>
+                            <li>Quality content promotion</li>
+                            <li>Community moderation</li>
+                        </ul>
+                        
+                        <h6><i class="fas fa-bell text-warning"></i> Notifications</h6>
+                        <ul>
+                            <li>Real-time notification updates</li>
+                            <li>Answer notifications</li>
+                            <li>Vote notifications</li>
+                            <li>Mention system (@username)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h4>User Roles</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Permissions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-secondary">Guest</span></td>
+                                <td>View all questions and answers</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-primary">User</span></td>
+                                <td>Register, log in, post questions/answers, vote, comment</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">Admin</span></td>
+                                <td>Moderate content, manage users, full platform access</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h4>Rich Text Editor Features</h4>
+                <p>The description editor supports:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul>
+                            <li><strong>Bold</strong>, <em>Italic</em>, <u>Underline</u>, <s>Strikethrough</s></li>
+                            <li>Numbered lists and bullet points</li>
+                            <li>Text alignment (Left, Center, Right)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul>
+                            <li>Hyperlink insertion (URL)</li>
+                            <li>Image upload and embedding</li>
+                            <li>Code block formatting</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb"></i> Getting Started</h6>
+                    <ol>
+                        <li><a href="{{ url_for('auth.register') }}">Create an account</a> to start participating</li>
+                        <li><a href="{{ url_for('questions.ask') }}">Ask your first question</a> using descriptive titles and detailed descriptions</li>
+                        <li>Browse existing questions and provide helpful answers</li>
+                        <li>Vote on quality content to help the community</li>
+                        <li>Build your reputation by contributing valuable content</li>
+                    </ol>
+                </div>
+                
+                <div class="text-center mt-4">
+                    {% if not session.logged_in %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-user-plus"></i> Join the Community
+                        </a>
+                    {% endif %}
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-home"></i> Explore Questions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Question - StackIt{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-edit"></i> Edit Question</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editQuestionForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               value="{{ question.title }}" required 
+                               minlength="5" maxlength="200" 
+                               placeholder="What's your programming question? Be specific.">
+                        <div class="form-text">Be specific and imagine you're asking a question to another person</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <div id="edit-editor-container" class="editor-container border rounded"></div>
+                        <input type="hidden" id="description" name="description" required>
+                        <div class="form-text">
+                            Include all the information someone would need to answer your question. 
+                            Use the rich text editor to format code, add links, and structure your content.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags</label>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" id="tagInput" 
+                                       placeholder="Type to search tags...">
+                                <div class="form-text">Add up to 5 tags to describe what your question is about</div>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-secondary" id="addTagBtn">
+                                    <i class="fas fa-plus"></i> Add Tag
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Tags -->
+                        <div id="selectedTags" class="mt-2"></div>
+                        
+                        <!-- Tag Suggestions -->
+                        <div id="tagSuggestions" class="mt-2" style="display: none;">
+                            <small class="text-muted">Popular tags:</small><br>
+                            {% for tag in all_tags[:20] %}
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1 mb-1 tag-suggestion" 
+                                        data-tag="{{ tag.name }}">{{ tag.name }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('questions.view', question_id=question.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Question
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize Quill editor with existing content
+var editQuill = new Quill('#edit-editor-container', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link', 'image'],
+            ['code-block'],
+            ['clean']
+        ]
+    },
+    placeholder: 'Describe your question in detail...'
+});
+
+// Set existing content
+editQuill.root.innerHTML = {{ question.description | tojson }};
+
+// Tag management
+let selectedTags = {{ question.tags | tojson }};
+const maxTags = 5;
+
+function updateSelectedTags() {
+    const container = document.getElementById('selectedTags');
+    container.innerHTML = selectedTags.map(tag => 
+        `<span class="badge bg-primary me-1 mb-1">
+            ${tag}
+            <button type="button" class="btn-close btn-close-white ms-1" 
+                    onclick="removeTag('${tag}')" style="font-size: 0.7em;"></button>
+            <input type="hidden" name="tags" value="${tag}">
+        </span>`
+    ).join('');
+}
+
+function addTag(tagName) {
+    if (selectedTags.length >= maxTags) {
+        alert(`You can only add up to ${maxTags} tags`);
+        return;
+    }
+    
+    if (!selectedTags.includes(tagName) && tagName.trim()) {
+        selectedTags.push(tagName.trim());
+        updateSelectedTags();
+        document.getElementById('tagInput').value = '';
+    }
+}
+
+function removeTag(tagName) {
+    selectedTags = selectedTags.filter(tag => tag !== tagName);
+    updateSelectedTags();
+}
+
+// Initialize tags display
+updateSelectedTags();
+
+// Add tag button
+document.getElementById('addTagBtn').addEventListener('click', function() {
+    const input = document.getElementById('tagInput');
+    addTag(input.value);
+});
+
+// Add tag on Enter
+document.getElementById('tagInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addTag(this.value);
+    }
+});
+
+// Show tag suggestions when input is focused
+document.getElementById('tagInput').addEventListener('focus', function() {
+    document.getElementById('tagSuggestions').style.display = 'block';
+});
+
+// Tag suggestion buttons
+document.querySelectorAll('.tag-suggestion').forEach(button => {
+    button.addEventListener('click', function() {
+        addTag(this.dataset.tag);
+    });
+});
+
+// Form submission
+document.getElementById('editQuestionForm').addEventListener('submit', function(e) {
+    // Get content from Quill editor
+    const description = editQuill.root.innerHTML;
+    document.getElementById('description').value = description;
+    
+    // Validate description
+    if (editQuill.getText().trim().length < 10) {
+        e.preventDefault();
+        alert('Description must be at least 10 characters long');
+        return;
+    }
+});
+</script>
+{% endblock %}
+

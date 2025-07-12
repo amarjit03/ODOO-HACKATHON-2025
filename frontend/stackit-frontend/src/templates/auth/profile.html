@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - StackIt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-circle"></i> User Profile</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-user-circle fa-5x text-muted"></i>
+                    <h4 class="mt-2">{{ session.username }}</h4>
+                    <p class="text-muted">{{ user_metrics.email if user_metrics.email else 'No email' }}</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h5 class="text-primary">{{ user_metrics.reputation_score or 0 }}</h5>
+                        <small class="text-muted">Reputation</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-success">{{ user_metrics.accepted_answers or 0 }}</h5>
+                        <small class="text-muted">Accepted Answers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-bar"></i> Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-8">Questions Asked:</div>
+                    <div class="col-4 text-end">{{ user_metrics.total_questions or 0 }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8">Answers Given:</div>
+                    <div class="col-4 text-end">{{ user_metrics.total_answers or 0 }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8">Comments Made:</div>
+                    <div class="col-4 text-end">{{ user_metrics.total_comments or 0 }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8">Votes Received:</div>
+                    <div class="col-4 text-end">{{ user_metrics.total_votes_received or 0 }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-8"><strong>Member Since:</strong></div>
+                    <div class="col-4 text-end">
+                        {% if user_metrics.join_date %}
+                            {{ user_metrics.join_date[:10] }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-question-circle"></i> Recent Questions</h6>
+                        <div id="recent-questions">
+                            <p class="text-muted">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-comment"></i> Recent Answers</h6>
+                        <div id="recent-answers">
+                            <p class="text-muted">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load recent questions and answers
+function loadRecentActivity() {
+    // Load recent questions
+    fetch('/api/questions/user/{{ session.user_id }}?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recent-questions');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted">No questions yet</p>';
+            } else {
+                container.innerHTML = data.map(q => 
+                    `<div class="mb-2">
+                        <a href="/questions/${q.id}" class="text-decoration-none">
+                            <small class="text-muted">${q.created_at.substring(0, 10)}</small><br>
+                            ${q.title}
+                        </a>
+                    </div>`
+                ).join('');
+            }
+        })
+        .catch(error => {
+            document.getElementById('recent-questions').innerHTML = '<p class="text-muted">Error loading questions</p>';
+        });
+
+    // Load recent answers
+    fetch('/api/answers/user/{{ session.user_id }}?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('recent-answers');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted">No answers yet</p>';
+            } else {
+                container.innerHTML = data.map(a => 
+                    `<div class="mb-2">
+                        <a href="/questions/${a.question_id}#answer-${a.id}" class="text-decoration-none">
+                            <small class="text-muted">${a.created_at.substring(0, 10)}</small><br>
+                            Answer (${a.vote_score || 0} votes)
+                        </a>
+                    </div>`
+                ).join('');
+            }
+        })
+        .catch(error => {
+            document.getElementById('recent-answers').innerHTML = '<p class="text-muted">Error loading answers</p>';
+        });
+}
+
+loadRecentActivity();
+</script>
+{% endblock %}
+

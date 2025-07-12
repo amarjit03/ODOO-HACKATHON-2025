@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}{{ question.title }} - StackIt{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Question -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ question.title }}</h4>
+                {% if session.logged_in and session.user_id == question.user_id %}
+                    <a href="{{ url_for('questions.edit', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="question-content mb-3">
+                    {{ question.description | safe }}
+                </div>
+                
+                <!-- Tags -->
+                {% if question.tags %}
+                    <div class="mb-3">
+                        {% for tag in question.tags %}
+                            <a href="{{ url_for('questions.search') }}?tags={{ tag }}" class="tag">{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Asked by <strong>{{ question.username }}</strong> on {{ question.created_at[:10] }}
+                        {% if question.updated_at != question.created_at %}
+                            (edited {{ question.updated_at[:10] }})
+                        {% endif %}
+                    </small>
+                    <div>
+                        <span class="badge bg-info">{{ question.answer_count or 0 }} answers</span>
+                        {% if question.accepted_answer_id %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check"></i> Solved
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Answers Section -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>{{ answers|length }} Answer{{ 's' if answers|length != 1 else '' }}</h5>
+            {% if answers|length > 1 %}
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="sortAnswers('votes')">
+                        <i class="fas fa-sort-amount-down"></i> Votes
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="sortAnswers('date')">
+                        <i class="fas fa-clock"></i> Date
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Answers List -->
+        <div id="answers-container">
+            {% for answer in answers %}
+                <div class="card mb-3 answer-card" data-answer-id="{{ answer.id }}" 
+                     data-votes="{{ answer.vote_stats.total_score if answer.vote_stats else 0 }}"
+                     data-date="{{ answer.created_at }}">
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Vote buttons -->
+                            <div class="col-md-1">
+                                {% if session.logged_in %}
+                                    <div class="vote-buttons">
+                                        <button class="vote-btn upvote-btn {{ 'active' if answer.my_vote and answer.my_vote.value == 1 else '' }}" 
+                                                data-answer-id="{{ answer.id }}" data-vote="1">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <span class="vote-score">{{ answer.vote_stats.total_score if answer.vote_stats else 0 }}</span>
+                                        <button class="vote-btn downvote-btn {{ 'active' if answer.my_vote and answer.my_vote.value == -1 else '' }}" 
+                                                data-answer-id="{{ answer.id }}" data-vote="-1">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                        
+                                        {% if session.user_id == question.user_id and not answer.is_accepted %}
+                                            <button class="btn btn-sm btn-outline-success mt-2 accept-btn" 
+                                                    data-answer-id="{{ answer.id }}">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="vote-buttons">
+                                        <span class="vote-score">{{ answer.vote_stats.total_score if answer.vote_stats else 0 }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Answer content -->
+                            <div class="col-md-11">
+                                {% if answer.is_accepted %}
+                                    <div class="alert alert-success py-2 mb-2">
+                                        <i class="fas fa-check-circle"></i> Accepted Answer
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="answer-content mb-3">
+                                    {{ answer.description | safe }}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        Answered by <strong>{{ answer.username }}</strong> on {{ answer.created_at[:10] }}
+                                        {% if answer.updated_at != answer.created_at %}
+                                            (edited {{ answer.updated_at[:10] }})
+                                        {% endif %}
+                                    </small>
+                                    
+                                    {% if session.logged_in and session.user_id == answer.user_id %}
+                                        <button class="btn btn-sm btn-outline-primary edit-answer-btn" 
+                                                data-answer-id="{{ answer.id }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Comments section would go here -->
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-link text-muted" onclick="toggleComments('{{ answer.id }}')">
+                                        <i class="fas fa-comment"></i> Comments
+                                    </button>
+                                    <div id="comments-{{ answer.id }}" class="mt-2" style="display: none;">
+                                        <!-- Comments will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Post Answer Form -->
+        {% if session.logged_in %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-reply"></i> Your Answer</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('questions.post_answer', question_id=question.id) }}" id="answerForm">
+                        <div class="mb-3">
+                            <div id="answer-editor-container" class="editor-container border rounded"></div>
+                            <input type="hidden" id="answerDescription" name="description" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Post Answer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <p class="mb-3">Want to answer this question?</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login to Answer
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if session.logged_in %}
+// Initialize Quill editor for answers
+var answerQuill = new Quill('#answer-editor-container', {
+    theme: 'snow',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['link', 'code-block'],
+            ['clean']
+        ]
+    },
+    placeholder: 'Write your answer here...'
+});
+
+// Answer form submission
+document.getElementById('answerForm').addEventListener('submit', function(e) {
+    const description = answerQuill.root.innerHTML;
+    document.getElementById('answerDescription').value = description;
+    
+    if (answerQuill.getText().trim().length < 10) {
+        e.preventDefault();
+        alert('Answer must be at least 10 characters long');
+        return;
+    }
+});
+
+// Voting functionality
+document.querySelectorAll('.vote-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const answerId = this.dataset.answerId;
+        const voteValue = parseInt(this.dataset.vote);
+        
+        fetch('/api/votes/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answer_id: answerId,
+                value: voteValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                // Reload the page to update vote counts
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error voting:', error);
+            alert('Error submitting vote');
+        });
+    });
+});
+
+// Accept answer functionality
+document.querySelectorAll('.accept-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const answerId = this.dataset.answerId;
+        
+        if (confirm('Are you sure you want to accept this answer?')) {
+            fetch('/api/answers/accept', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    answer_id: answerId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error accepting answer:', error);
+                alert('Error accepting answer');
+            });
+        }
+    });
+});
+{% endif %}
+
+// Sort answers
+function sortAnswers(sortBy) {
+    const container = document.getElementById('answers-container');
+    const answers = Array.from(container.querySelectorAll('.answer-card'));
+    
+    answers.sort((a, b) => {
+        if (sortBy === 'votes') {
+            return parseInt(b.dataset.votes) - parseInt(a.dataset.votes);
+        } else if (sortBy === 'date') {
+            return new Date(b.dataset.date) - new Date(a.dataset.date);
+        }
+    });
+    
+    answers.forEach(answer => container.appendChild(answer));
+}
+
+// Toggle comments (placeholder)
+function toggleComments(answerId) {
+    const commentsDiv = document.getElementById(`comments-${answerId}`);
+    if (commentsDiv.style.display === 'none') {
+        commentsDiv.style.display = 'block';
+        commentsDiv.innerHTML = '<p class="text-muted">Comments feature coming soon...</p>';
+    } else {
+        commentsDiv.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
+
