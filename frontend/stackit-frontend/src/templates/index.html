@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-question-circle"></i> Recent Questions</h2>
+            {% if session.logged_in %}
+                <a href="{{ url_for('questions.ask') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ask Question
+                </a>
+            {% endif %}
+        </div>
+        
+        <!-- Search and Filter -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('questions.search') }}">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="q" placeholder="Search questions..." value="{{ search or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                    {% if selected_tags %}
+                        {% for tag in selected_tags %}
+                            <input type="hidden" name="tags" value="{{ tag }}">
+                        {% endfor %}
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <!-- Questions List -->
+        {% if questions %}
+            {% for question in questions %}
+                <div class="card question-card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <h5 class="card-title">
+                                    <a href="{{ url_for('questions.view', question_id=question.id) }}" class="text-decoration-none">
+                                        {{ question.title }}
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">
+                                    {{ question.description[:200] }}{% if question.description|length > 200 %}...{% endif %}
+                                </p>
+                                
+                                <!-- Tags -->
+                                {% if question.tags %}
+                                    <div class="mb-2">
+                                        {% for tag in question.tags %}
+                                            <a href="{{ url_for('questions.search') }}?tags={{ tag }}" class="tag">{{ tag }}</a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                <small class="text-muted">
+                                    Asked by {{ question.username if question.username else 'Unknown' }} 
+                                    on {{ question.created_at[:10] }}
+                                </small>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <strong>{{ question.answer_count or 0 }}</strong><br>
+                                        <small class="text-muted">Answers</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <strong>{{ question.vote_score or 0 }}</strong><br>
+                                        <small class="text-muted">Votes</small>
+                                    </div>
+                                    <div class="col-4">
+                                        {% if question.accepted_answer_id %}
+                                            <i class="fas fa-check-circle text-success fa-2x"></i><br>
+                                            <small class="text-success">Solved</small>
+                                        {% else %}
+                                            <i class="far fa-clock text-warning fa-2x"></i><br>
+                                            <small class="text-warning">Open</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">No questions found</h4>
+                <p class="text-muted">Be the first to ask a question!</p>
+                {% if session.logged_in %}
+                    <a href="{{ url_for('questions.ask') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Ask Question
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Platform Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-bar"></i> Platform Stats</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-primary">{{ stats.total_questions or 0 }}</h4>
+                        <small class="text-muted">Questions</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ stats.total_answers or 0 }}</h4>
+                        <small class="text-muted">Answers</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-info">{{ stats.total_users or 0 }}</h4>
+                        <small class="text-muted">Users</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-warning">{{ stats.active_users_today or 0 }}</h4>
+                        <small class="text-muted">Active Today</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Popular Tags -->
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-tags"></i> Popular Tags</h6>
+            </div>
+            <div class="card-body">
+                {% if popular_tags %}
+                    {% for tag in popular_tags %}
+                        <a href="{{ url_for('questions.search') }}?tags={{ tag.name }}" class="tag d-inline-block mb-2">
+                            {{ tag.name }}
+                            <span class="badge bg-secondary ms-1">{{ tag.question_count or 0 }}</span>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No tags yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
